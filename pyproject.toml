@@ -1,0 +1,7 @@
+[project]
+name = "youtube-content-management-mcp"
+version = "0.1.0"
+description = "This is the MCP server for Youtube Content Management"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
