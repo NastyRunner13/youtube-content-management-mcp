@@ -35,7 +35,7 @@ def search_videos(arguments: dict) -> List[TextContent]:
         query = arguments.get("query", "")
         max_results = min(arguments.get("max_results", 25), 50)  # API limit
         order = arguments.get("order", "relevance")
-        duration = arguments.get("duration", "any")
+        duration = arguments.get("duration", "medium")
         upload_date = arguments.get("published_after", None)
         
         # Validate parameters

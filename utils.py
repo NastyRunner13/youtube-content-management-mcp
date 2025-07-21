@@ -13,7 +13,7 @@ class YouTubeAPIError(Exception):
 def validate_youtube_params(order: str, duration: str, published_after: str | None) -> None:
     """Validate YouTube API parameters"""
     valid_orders = {"relevance", "date", "rating", "viewCount"}
-    valid_durations = {"any", "short", "medium", "long"}
+    valid_durations = {"medium", "long"}
     
     if order not in valid_orders:
         raise ValueError(f"Invalid order parameter: {order}. Must be one of {valid_orders}")

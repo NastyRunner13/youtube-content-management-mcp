@@ -1,3 +1,4 @@
 mcp[cli]
 python-dotenv
 google-api-python-client
+ipykernel
