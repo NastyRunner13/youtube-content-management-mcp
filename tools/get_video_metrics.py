@@ -1,8 +1,9 @@
 from server import mcp
 from mcp.types import TextContent
 from typing import List
-from utils import YouTubeAPIError, get_youtube_client
+from utils.tool_utils import YouTubeAPIError, get_youtube_client
 from googleapiclient.errors import HttpError
+from utils.models import VideoIdInput
 
 @mcp.tool()
 def get_video_metrics(arguments: dict) -> List[TextContent]:
@@ -22,18 +23,19 @@ def get_video_metrics(arguments: dict) -> List[TextContent]:
 
     Raises:
         YouTubeAPIError: If the API key is missing, the video ID is invalid, the API request fails,
-            or an unexpected error occurs.
+            or the input arguments are invalid (via Pydantic).
     """
+    try:
+        input_data = VideoIdInput(**arguments)
+    except ValueError as e:
+        raise YouTubeAPIError(f"Invalid input arguments: {e}")
+
     youtube = get_youtube_client()
 
     try:
-        video_id = arguments.get("video_id", "")
-        if not video_id:
-            raise YouTubeAPIError("Video ID is required")
-
         response = youtube.videos().list(
             part='snippet,statistics',
-            id=video_id
+            id=input_data.video_id
         ).execute()
 
         items = response.get('items', [])
@@ -57,6 +59,6 @@ def get_video_metrics(arguments: dict) -> List[TextContent]:
         )]
 
     except HttpError as e:
-        raise YouTubeAPIError(f"YouTube API error for video ID '{video_id}': {e}")
+        raise YouTubeAPIError(f"YouTube API error for video ID '{input_data.video_id}': {e}")
     except Exception as e:
-        raise YouTubeAPIError(f"Unexpected error for video ID '{video_id}': {e}")
+        raise YouTubeAPIError(f"Unexpected error for video ID '{input_data.video_id}': {e}")

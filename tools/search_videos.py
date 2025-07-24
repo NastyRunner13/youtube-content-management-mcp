@@ -1,9 +1,10 @@
 from server import mcp
 from mcp.types import TextContent
 from typing import List
-from utils import validate_youtube_params, YouTubeAPIError, get_youtube_client
+from utils.tool_utils import YouTubeAPIError, get_youtube_client
 from googleapiclient.errors import HttpError
 from get_video_metrics import get_video_metrics
+from utils.models import SearchVideosInput
 
 @mcp.tool()
 def search_videos(arguments: dict) -> List[TextContent]:
@@ -30,31 +31,27 @@ def search_videos(arguments: dict) -> List[TextContent]:
             TextContent with a "No videos found" message.
 
     Raises:
-        YouTubeAPIError: If the API key is missing, the API request fails, or an unexpected error occurs.
+        YouTubeAPIError: If the API key is missing, the API request fails, the input arguments are invalid (via Pydantic), or an unexpected error occurs.
     """
+    try:
+        input_data = SearchVideosInput(**arguments)
+    except ValueError as e:
+        raise YouTubeAPIError(f"Invalid input arguments: {e}")
+
     youtube = get_youtube_client()
     
     try:
-        query = arguments.get("query", "")
-        max_results = min(arguments.get("max_results", 25), 50)
-        order = arguments.get("order", "relevance")
-        duration = arguments.get("duration", "medium")
-        upload_date = arguments.get("published_after", None)
-        
-        # Validate parameters
-        validate_youtube_params(order, duration, upload_date)
-        
         search_params = {
             'part': 'snippet',
-            'q': query,
+            'q': input_data.query,
             'type': 'video',
-            'maxResults': max_results,
-            'order': order,
-            'videoDuration': duration
+            'maxResults': input_data.max_results,
+            'order': input_data.order,
+            'videoDuration': input_data.duration
         }
         
-        if upload_date:
-            search_params['publishedAfter'] = upload_date
+        if input_data.published_after:
+            search_params['publishedAfter'] = input_data.published_after
         
         search_response = youtube.search().list(**search_params).execute()
         
@@ -75,7 +72,7 @@ def search_videos(arguments: dict) -> List[TextContent]:
             # Fetch metrics using get_video_metrics
             metrics_response = get_video_metrics({"video_id": video_id})
             if metrics_response[0].text.startswith("No video found"):
-                continue  # Skip if metrics not found
+                continue
             metrics_text = metrics_response[0].text.split('\n')
             view_count = next((line.split(': ')[1] for line in metrics_text if line.startswith('Views')), '0')
             like_count = next((line.split(': ')[1] for line in metrics_text if line.startswith('Likes')), '0')
@@ -96,6 +93,6 @@ def search_videos(arguments: dict) -> List[TextContent]:
         return results if results else [TextContent(type="text", text="No videos found.")]
     
     except HttpError as e:
-        raise YouTubeAPIError(f"YouTube API error for query '{query}': {e}")
+        raise YouTubeAPIError(f"YouTube API error for query '{input_data.query}': {e}")
     except Exception as e:
-        raise YouTubeAPIError(f"Unexpected error for query '{query}': {e}")
+        raise YouTubeAPIError(f"Unexpected error for query '{input_data.query}': {e}")

@@ -1,8 +1,9 @@
 from server import mcp
 from mcp.types import TextContent
 from typing import List
-from utils import YouTubeAPIError, get_youtube_client
+from utils.tool_utils import YouTubeAPIError, get_youtube_client
 from googleapiclient.errors import HttpError
+from utils.models import ChannelIdInput
 
 @mcp.tool()
 def get_channel_metrics(arguments: dict) -> List[TextContent]:
@@ -22,18 +23,19 @@ def get_channel_metrics(arguments: dict) -> List[TextContent]:
 
     Raises:
         YouTubeAPIError: If the API key is missing, the channel ID is invalid, the API request fails,
-            or an unexpected error occurs.
+            or the input arguments are invalid (via Pydantic).
     """
+    try:
+        input_data = ChannelIdInput(**arguments)
+    except ValueError as e:
+        raise YouTubeAPIError(f"Invalid input arguments: {e}")
+
     youtube = get_youtube_client()
 
     try:
-        channel_id = arguments.get("channel_id", "")
-        if not channel_id:
-            raise YouTubeAPIError("Channel ID is required")
-
         response = youtube.channels().list(
             part='snippet,statistics',
-            id=channel_id
+            id=input_data.channel_id
         ).execute()
 
         items = response.get('items', [])
@@ -57,6 +59,6 @@ def get_channel_metrics(arguments: dict) -> List[TextContent]:
         )]
 
     except HttpError as e:
-        raise YouTubeAPIError(f"YouTube API error for channel ID '{channel_id}': {e}")
+        raise YouTubeAPIError(f"YouTube API error for channel ID '{input_data.channel_id}': {e}")
     except Exception as e:
-        raise YouTubeAPIError(f"Unexpected error for channel ID '{channel_id}': {e}")
+        raise YouTubeAPIError(f"Unexpected error for channel ID '{input_data.channel_id}': {e}")
