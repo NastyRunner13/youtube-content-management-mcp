@@ -3,7 +3,7 @@ from mcp.types import TextContent
 from typing import List
 from utils.tool_utils import YouTubeAPIError, get_youtube_client
 from googleapiclient.errors import HttpError
-from get_video_metrics import get_video_metrics
+from tools.get_video_metrics import get_video_metrics
 from utils.models import SearchVideosInput
 
 @mcp.tool()
