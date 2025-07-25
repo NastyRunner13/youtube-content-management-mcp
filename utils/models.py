@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 import re
 
@@ -64,3 +64,44 @@ class ChannelIdInput(BaseModel):
 
 class PlaylistIdInput(BaseModel):
     playlist_id: str = Field(..., min_length=1, description="The YouTube playlist ID (required)")
+
+class FetchTranscriptsInput(BaseModel):
+    video_id: Optional[str] = Field(None, min_length=1, description="The YouTube video ID")
+    video_url: Optional[str] = Field(None, description="The YouTube video URL")
+    language_code: Optional[str] = Field("en", description="Language code for the transcript (e.g., 'en')")
+
+    @model_validator(mode='before')
+    @classmethod
+    def check_id_or_url(cls, values):
+        # Handle both dict and object inputs
+        if hasattr(values, '__dict__'):
+            values = values.__dict__
+        
+        video_id = values.get("video_id")
+        video_url = values.get("video_url")
+        
+        if not video_id and not video_url:
+            raise ValueError("Either video_id or video_url must be provided")
+        
+        if video_url:
+            # Extract video ID from URL
+            patterns = [
+                r"(?:v=|v\/|embed\/|youtu.be\/)([A-Za-z0-9_-]{11})",
+                r"watch\?v=([A-Za-z0-9_-]{11})"
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, video_url)
+                if match:
+                    values["video_id"] = match.group(1)
+                    break
+            else:
+                raise ValueError("Invalid YouTube URL: could not extract video ID")
+        
+        return values
+
+    @field_validator("language_code")
+    @classmethod
+    def validate_language_code(cls, v):
+        if not re.match(r'^[a-z]{2}(-[A-Z]{2})?$', v):
+            raise ValueError(f"Invalid language code: {v}. Must be a valid ISO 639-1 code (e.g., 'en', 'en-US')")
+        return v
