@@ -3,3 +3,4 @@ python-dotenv
 google-api-python-client
 ipykernel
 pydantic
+youtube_transcript_api

@@ -6,6 +6,7 @@ from tools.get_video_metrics import get_video_metrics
 from tools.get_channel_metrics import get_channel_metrics
 from tools.get_playlist_metrics import get_playlist_metrics
 from tools.get_video_metrics import get_video_metrics
+from tools.fetch_transcripts import fetch_transcripts
 
 __all__ = [
     "search_videos",
@@ -13,5 +14,6 @@ __all__ = [
     "search_playlists",
     "get_video_metrics",
     "get_channel_metrics",
-    "get_playlist_metrics"
+    "get_playlist_metrics",
+    "fetch_transcripts"
 ]
